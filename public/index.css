@@ -1,0 +1,127 @@
+/* =========================
+   Reset y Globales
+   ========================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #FAFAF9;
+  color: #333;
+}
+
+/* =========================
+   Header
+   ========================= */
+header {
+  background: #4B5320;        /* verde oscuro */
+  color: #F5F5DC;             /* beige claro */
+  padding: 16px;
+  text-align: center;
+}
+header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+header p {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+/* =========================
+   Contenedor Principal
+   ========================= */
+#container {
+  display: flex;
+  height: calc(100% - 64px);  /* restar altura del header */
+}
+
+/* =========================
+   Sidebar (Controles)
+   ========================= */
+#sidebar {
+  width: 300px;
+  background: #F5F5DC;          /* beige claro */
+  padding: 16px;
+  border-right: 4px solid #8B4513; /* marrón oscuro */
+  overflow-y: auto;
+}
+#sidebar h2 {
+  font-size: 1.2rem;
+  color: #4B5320;
+  margin: 12px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #8B4513;
+}
+#sidebar label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 0.95rem;
+}
+#sidebar input[type="number"],
+#sidebar select {
+  width: 100%;
+  padding: 6px 8px;
+  margin: 4px 0 10px;
+  border: 1px solid #8B4513;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+#sidebar button {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  background: #8B4513;        /* marrón oscuro */
+  color: #F5F5DC;             /* beige claro */
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+#sidebar button:hover {
+  background: #6B3E1D;
+}
+
+/* =========================
+   Mapa
+   ========================= */
+#map {
+  flex: 1;
+  position: relative;
+}
+
+/* =========================
+   Scrollbar Sidebar (opcional)
+   ========================= */
+/* Customiza barra de scroll para navegadores WebKit */
+#sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+#sidebar::-webkit-scrollbar-track {
+  background: #F5F5DC;
+}
+#sidebar::-webkit-scrollbar-thumb {
+  background: #8B4513;
+  border-radius: 4px;
+}
+
+/* =========================
+   Responsive
+   ========================= */
+@media (max-width: 768px) {
+  #container {
+    flex-direction: column;
+  }
+  #sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 4px solid #8B4513;
+  }
+  #map {
+    height: 60vh;
+  }
+}
