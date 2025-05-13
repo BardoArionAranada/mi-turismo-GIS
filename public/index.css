@@ -1,127 +1,102 @@
-/* =========================
-   Reset y Globales
-   ========================= */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-html, body {
-  height: 100%;
-  font-family: 'Segoe UI', Tahoma, sans-serif;
-  background: #FAFAF9;
-  color: #333;
+/* RESET */
+* { margin:0; padding:0; box-sizing:border-box }
+body, input, select, button { font-family: 'Arial', sans-serif; }
+
+/* PALETA:
+   D3B88C (Tan)
+   E54B4B (Imperial Red)
+   1E1E24 (Raisin Black)
+   537D8D (Air Force Blue)
+   482C3D (Eggplant)
+*/
+
+/* BODY */
+body {
+  display:flex; flex-direction:column; height:100vh;
+  background: #1E1E24; color:#FFF;
 }
 
-/* =========================
-   Header
-   ========================= */
+/* HEADER */
 header {
-  background: #4B5320;        /* verde oscuro */
-  color: #F5F5DC;             /* beige claro */
-  padding: 16px;
-  text-align: center;
+  background: #E54B4B;
+  text-align:center; padding:1rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
-header h1 {
-  font-size: 1.8rem;
-  margin-bottom: 4px;
-}
-header p {
-  font-size: 1rem;
-  opacity: 0.9;
-}
+header h1 { font-size:1.8rem; }
+header p  { font-size:0.9rem; opacity:0.85; margin-top:0.3rem; }
 
-/* =========================
-   Contenedor Principal
-   ========================= */
-#container {
-  display: flex;
-  height: calc(100% - 64px);  /* restar altura del header */
-}
+/* LAYOUT */
+#container { flex:1; display:flex; }
+#map       { flex:1 }
 
-/* =========================
-   Sidebar (Controles)
-   ========================= */
+/* SIDEBAR */
 #sidebar {
-  width: 300px;
-  background: #F5F5DC;          /* beige claro */
-  padding: 16px;
-  border-right: 4px solid #8B4513; /* marrón oscuro */
-  overflow-y: auto;
+  width:320px; background:#282832; padding:1rem;
+  overflow-y:auto; border-right:4px solid #E54B4B;
 }
-#sidebar h2 {
-  font-size: 1.2rem;
-  color: #4B5320;
-  margin: 12px 0 6px;
-  padding-bottom: 4px;
-  border-bottom: 2px solid #8B4513;
-}
-#sidebar label {
-  display: block;
-  margin: 8px 0 4px;
-  font-size: 0.95rem;
-}
-#sidebar input[type="number"],
-#sidebar select {
-  width: 100%;
-  padding: 6px 8px;
-  margin: 4px 0 10px;
-  border: 1px solid #8B4513;
-  border-radius: 4px;
-  font-size: 0.95rem;
-}
-#sidebar button {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  background: #8B4513;        /* marrón oscuro */
-  color: #F5F5DC;             /* beige claro */
-  border: none;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-#sidebar button:hover {
-  background: #6B3E1D;
+.panel { margin-bottom:1.2rem }
+.panel h2 {
+  font-size:1.1rem; margin-bottom:0.6rem;
+  color:#D3B88C; border-bottom:2px solid #D3B88C; padding-bottom:0.3rem;
 }
 
-/* =========================
-   Mapa
-   ========================= */
-#map {
-  flex: 1;
-  position: relative;
+/* LEYENDA */
+#legend { list-style:none; }
+#legend li {
+  display:flex; align-items:center; margin-bottom:0.5rem;
+}
+.legend-icon {
+  width:16px; height:16px; border-radius:50%; margin-right:0.5rem;
+}
+.legend-icon.atraccion { background:#E54B4B }
+.legend-icon.museo     { background:#537D8D }
+.legend-icon.hotel     { background:#D3B88C }
+.legend-icon.iglesia   { background:#482C3D }
+.legend-icon.reserva   { background:#FFF; border:2px solid #D3B88C }
+
+/* FILTROS */
+#filtros { display:flex; flex-wrap:wrap; gap:0.4rem; }
+#filtros label {
+  background:#3E3E47; padding:0.4rem 0.8rem; border-radius:20px;
+  cursor:pointer; font-size:0.9rem;
+}
+#filtros input { margin-right:0.3rem }
+
+/* INPUTS & SELECTS */
+label { display:block; font-size:0.9rem; margin-bottom:0.3rem }
+input, select {
+  width:100%; padding:0.5rem; margin-bottom:0.6rem;
+  border:1px solid #3E3E47; border-radius:4px;
+  background:#282832; color:#FFF;
+}
+.inline { display:flex; gap:0.4rem }
+.inline select { flex:1 }
+
+/* BOTONES */
+button {
+  width:100%; padding:0.6rem; margin-bottom:0.5rem;
+  border:none; border-radius:4px; font-size:0.95rem;
+  background:#D3B88C; color:#1E1E24; cursor:pointer;
+  transition:background 0.2s;
+}
+button:hover { background:#E5C794 }
+#btnClear {
+  background:#537D8D; color:#FFF;
+}
+#btnClear:hover {
+  background:#769FB6;
 }
 
-/* =========================
-   Scrollbar Sidebar (opcional)
-   ========================= */
-/* Customiza barra de scroll para navegadores WebKit */
-#sidebar::-webkit-scrollbar {
-  width: 8px;
+/* POPUPS */
+.leaflet-popup-content-wrapper {
+  background:#FFF; color:#1E1E24; border-radius:6px;
 }
-#sidebar::-webkit-scrollbar-track {
-  background: #F5F5DC;
-}
-#sidebar::-webkit-scrollbar-thumb {
-  background: #8B4513;
-  border-radius: 4px;
-}
+.leaflet-popup-tip { background:#FFF; }
+.popup { font-size:0.9rem; }
 
-/* =========================
-   Responsive
-   ========================= */
-@media (max-width: 768px) {
-  #container {
-    flex-direction: column;
-  }
-  #sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 4px solid #8B4513;
-  }
-  #map {
-    height: 60vh;
-  }
+/* RESPONSIVE */
+@media(max-width:800px){
+  #container { flex-direction:column }
+  #sidebar { width:100%; height:40%; border-right:none; border-bottom:4px solid #E54B4B }
+  #map     { height:60% }
 }

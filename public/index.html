@@ -2,13 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Turismo León Gto</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🗺️ TURISMO León Gto</title>
   <link rel="stylesheet" href="index.css">
+  <!-- Leaflet -->
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin=""/>
+  <!-- MarkerCluster -->
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
   <link rel="stylesheet"
@@ -16,111 +18,145 @@
 </head>
 <body>
   <header>
-    <h1>Plataforma de Turismo León Gto</h1>
+    <h1>🗺️ TURISMO León Gto</h1>
     <p>Bardo Arion Aranda · Luisa Fernanda Vázquez Razo · Francisco Osorno</p>
   </header>
+
   <div id="container">
-    <aside id="sidebar">
-      <h2>Filtros</h2>
-      <div id="filtros"></div>
-
-      <h2>Análisis Turf.js</h2>
-      <label>Buffer (m):
-        <input id="bufferDist" type="number" value="500">
-      </label>
-      <button id="btnBuffer">Crear buffer</button>
-
-      <label>Distancia entre:</label>
-      <select id="distA"></select>
-      <select id="distB"></select>
-      <button id="btnDist">Calcular distancia</button>
-
-      <button id="btnCount">Contar puntos en zona</button>
-
-      <h2>Análisis Avanzado</h2>
-      <button id="btnArea">Calcular áreas de zonas</button>
-      <button id="btnCentroid">Mostrar centroides de zonas</button>
-
-      <label>Radio vecinos (m):
-        <input id="neighborRadius" type="number" value="1000">
-      </label>
-      <button id="btnNeighbors">Buscar vecinos</button>
-
-      <h2>Intersección de Zonas</h2>
-      <select id="zoneA"></select>
-      <select id="zoneB"></select>
-      <button id="btnIntersectZones">Intersectar zonas</button>
+    <aside id="sidebar" style="overflow-y: auto; height: 100vh; padding-right: 1rem;">
+      <!-- Lugares Turísticos -->
+      <section class="panel">
+        <h2>📋 Lugares Turísticos</h2>
+        <ul id="legend">
+          <li><span class="legend-icon atraccion"></span>Atracción</li>
+          <li><span class="legend-icon museo"></span>Museo</li>
+          <li><span class="legend-icon hotel"></span>Hotel</li>
+          <li><span class="legend-icon iglesia"></span>Iglesia</li>
+          <li><span class="legend-icon reserva"></span>Reserva</li>
+        </ul>
+      </section>
+      <!-- Filtros -->
+      <section class="panel">
+        <h2>🔍 Filtros</h2>
+        <div id="filtros" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;"></div>
+      </section>
+      <!-- Análisis Turf.js -->
+      <section class="panel">
+        <h2>🛠️ Análisis Turf.js</h2>
+        <label>Buffer (m):
+          <input id="bufferDist" type="number" value="500">
+        </label>
+        <button id="btnBuffer">Crear Buffer</button>
+        <label style="margin-top: 1rem; display: block;">Distancia entre:</label>
+        <div style="display: flex; gap: 0.5rem;">
+          <select id="distA"></select>
+          <select id="distB"></select>
+        </div>
+        <button id="btnDist">Medir Distancia</button>
+        <label style="margin-top: 1rem; display: block;">Contar puntos en zona:</label>
+        <select id="zoneCount"></select>
+        <button id="btnCount">Contar Puntos</button>
+        <button id="btnClear" style="margin-top: 1rem;">Limpiar Capas</button>
+      </section>
+      <!-- Análisis Avanzado -->
+      <section class="panel">
+        <h2>📐 Análisis Avanzado</h2>
+        <button id="btnArea">Calcular Áreas</button>
+        <button id="btnCentroid">Mostrar Centroides</button>
+        <label style="margin-top: 1rem; display: block;">Radio vecinos (m):
+          <input id="neighborRadius" type="number" value="1000">
+        </label>
+        <button id="btnNeighbors">Buscar Vecinos</button>
+      </section>
+      <!-- Intersección de Zonas -->
+      <section class="panel">
+        <h2>🔗 Intersección de Zonas</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <select id="zoneA"></select>
+          <select id="zoneB"></select>
+        </div>
+        <button id="btnIntersectZones" style="margin-top: 0.5rem;">Intersectar Zonas</button>
+      </section>
     </aside>
-    <div id="map"></div>
+
+    <main id="map"></main>
   </div>
 
+  <!-- Librerías -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
   <script>
-    // 1) INICIALIZACIÓN DEL MAPA Y CAPAS
+    // === Inicialización del mapa ===
     const map = L.map('map').setView([21.1222, -101.6781], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // === Icono por defecto de Leaflet ===
+    const defaultIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    // === Capas y grupos ===
     const markers = L.markerClusterGroup();
     const zonasLayer = L.geoJSON(null, {
       style: { color: '#8B4513', weight: 2, fillOpacity: 0.2 },
-      onEachFeature: (f,l) =>
+      onEachFeature: (f, l) =>
         l.bindPopup(`<b>${f.properties.nombre_zona}</b><br>${f.properties.tipo_zona}`)
     }).addTo(map);
+    const tempLayers = L.layerGroup().addTo(map);
 
-    // 2) VARIABLES GLOBALES
-    let puntosData = [],          // Array de Features de puntos
-        zonasData  = [],          // Array de Features de zonas
-        tipos       = new Set(),  // Conjunto de tipos únicos de punto
-        selectedPoint = null;     // LatLng elegido para el buffer
+    // === Datos en memoria ===
+    let puntosData = [], zonasData = [], tipos = new Set();
 
-    // 3) CARGA DE PUNTOS Y GENERACIÓN DE CONTROLES DE FILTRO
+    // === Carga de puntos ===
     fetch('/puntos').then(r => r.json()).then(d => {
       puntosData = d.features;
       const selA = document.getElementById('distA'),
             selB = document.getElementById('distB'),
             fd   = document.getElementById('filtros');
-
-      // Llenamos los selects de distancia y recogemos tipos
       puntosData.forEach(f => {
         tipos.add(f.properties.tipo);
-        [selA, selB].forEach(select =>
-          select.add(new Option(f.properties.nombre, f.properties.id))
+        [selA, selB].forEach(s =>
+          s.add(new Option(f.properties.nombre, f.properties.id))
         );
       });
-
-      // Creamos un checkbox por cada tipo
       tipos.forEach(t => {
-        const cb  = document.createElement('input');
-        cb.type   = 'checkbox';
-        cb.value  = t;
-        cb.checked= true;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.value = t; cb.checked = true;
         cb.onchange = renderPuntos;
         const lbl = document.createElement('label');
         lbl.append(cb, ' ', t);
+        lbl.style.background = 'rgba(255,255,255,0.1)';
+        lbl.style.padding = '0.3rem 0.6rem';
+        lbl.style.borderRadius = '0.5rem';
         fd.append(lbl);
       });
-
-      // Pintamos los puntos inicialmente
       renderPuntos();
     });
 
-    // 4) CARGA DE ZONAS Y LLENADO DE CONTROLES DE ZONA
+    // === Carga de zonas ===
     fetch('/zonas').then(r => r.json()).then(d => {
       zonasData = d.features;
       zonasLayer.addData(zonasData);
-      const zA = document.getElementById('zoneA'),
-            zB = document.getElementById('zoneB');
       zonasData.forEach(z => {
-        zA.add(new Option(z.properties.nombre_zona, z.properties.id));
-        zB.add(new Option(z.properties.nombre_zona, z.properties.id));
+        ['zoneA','zoneB','zoneCount'].forEach(id => {
+          document.getElementById(id)
+            .add(new Option(z.properties.nombre_zona, z.properties.id));
+        });
       });
     });
 
-    // 5) RENDERIZAR PUNTOS SEGÚN FILTRO Y ASIGNAR CLICK PARA SELECCIÓN
-    function renderPuntos() {
+    // === Render de puntos con iconos ===
+    function renderPuntos(){
       markers.clearLayers();
       const activos = new Set(
         Array.from(document.querySelectorAll('#filtros input:checked'))
@@ -129,133 +165,138 @@
       puntosData
         .filter(f => activos.has(f.properties.tipo))
         .forEach(f => {
-          const m = L.marker([
-            f.geometry.coordinates[1],
-            f.geometry.coordinates[0]
-          ]).bindPopup(`<b>${f.properties.nombre}</b><br>${f.properties.tipo}`);
-
-          // Al clickar, guardamos ese punto para el buffer
-          m.on('click', e => {
-            selectedPoint = e.latlng;
-            alert(
-              `Seleccionado:\n${f.properties.nombre}\n` +
-              `Lat: ${selectedPoint.lat.toFixed(5)}, ` +
-              `Lng: ${selectedPoint.lng.toFixed(5)}`
-            );
-          });
-
+          const m = L.marker(
+            [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+            { icon: defaultIcon }
+          ).bindPopup(`<b>${f.properties.nombre}</b><br>${f.properties.tipo}`);
           markers.addLayer(m);
         });
       map.addLayer(markers);
     }
 
-    // 6) BUFFER: crea un círculo alrededor de selectedPoint
+    // === Colores por tipo (para buffers, líneas, zonas) ===
+    function getColor(tipo){
+      return ({
+        'Atracción': '#E54B4B',
+        'Museo'     : '#D3B88C',
+        'Hotel'     : '#482C3D',
+        'Iglesia'   : '#537D8D',
+        'Reserva'   : '#1E1E24'
+      })[tipo] || '#333';
+    }
+
+    // === Buffer ===
     document.getElementById('btnBuffer').onclick = () => {
-      if (!selectedPoint) {
-        return alert('Haz clic en el punto sobre el que quieres aplicar el buffer.');
-      }
+      tempLayers.clearLayers();
       const d = +document.getElementById('bufferDist').value;
-      const buf = turf.circle(
-        [selectedPoint.lng, selectedPoint.lat],
-        d,
-        { units:'meters', steps:64 }
+      const capa = markers.getLayers()[0];
+      if (!capa) return alert('No hay puntos visibles');
+      const c = capa.getLatLng();
+      const buf = turf.circle([c.lng, c.lat], d, { units: 'meters' });
+      tempLayers.addLayer(
+        L.geoJSON(buf, { style: { color: getColor(capa.options.icon.options.iconUrl), fillOpacity: 0.15 } })
       );
-      L.geoJSON(buf, {
-        style:{ color:'#2E8B57', fillOpacity:0.15 }
-      }).addTo(map);
     };
 
-    // 7) DISTANCIA: calcula línea y distancia entre dos puntos seleccionados
+    // === Distancia ===
     document.getElementById('btnDist').onclick = () => {
+      tempLayers.clearLayers();
       const a = +distA.value, b = +distB.value;
-      const fA = puntosData.find(p => p.properties.id === a),
-            fB = puntosData.find(p => p.properties.id === b);
-      if (!fA || !fB) return alert('Selecciona dos puntos distintos.');
-      const dist = turf.distance(fA, fB, { units:'meters' }).toFixed(1);
-      const line = turf.lineString([
-        fA.geometry.coordinates,
-        fB.geometry.coordinates
-      ]);
-      L.geoJSON(line, {
-        style:{ color:'#556B2F', dashArray:'4' }
-      }).addTo(map)
-        .bindPopup(`Distancia: ${dist} m`)
-        .openPopup();
+      const fA = puntosData.find(f => f.properties.id === a);
+      const fB = puntosData.find(f => f.properties.id === b);
+      if (!fA||!fB) return alert('Selecciona dos puntos distintos');
+      const dist = turf.distance(fA, fB, { units: 'meters' }).toFixed(1);
+      const line = turf.lineString([fA.geometry.coordinates, fB.geometry.coordinates]);
+      tempLayers.addLayer(
+        L.geoJSON(line, { style:{ color:'#482C3D', dashArray:'4' } })
+          .bindPopup(`Distancia: ${dist} m`)
+      );
     };
 
-    // 8) CONTEO: cuenta puntos dentro de la primera zona
+    // === Conteo en zona ===
     document.getElementById('btnCount').onclick = () => {
-      const zone = zonasData[0];
+      const zid = +zoneCount.value;
+      const zona = zonasData.find(z => z.properties.id === zid);
+      if (!zona) return alert('Selecciona una zona');
       const fc = turf.featureCollection(
         puntosData.map(f => turf.point(f.geometry.coordinates))
       );
-      const ptsIn = turf.pointsWithinPolygon(fc, zone);
-      alert(`Hay ${ptsIn.features.length} puntos en "${zone.properties.nombre_zona}".`);
+      const ptsIn = turf.pointsWithinPolygon(fc, zona);
+      alert(`Hay ${ptsIn.features.length} puntos en "${zona.properties.nombre_zona}"`);
     };
 
-    // 9) ÁREA: muestra pop-up con área de cada zona (km²)
+    // === Limpiar capas ===
+    document.getElementById('btnClear').onclick = () => {
+      tempLayers.clearLayers();
+    };
+
+    // === Áreas ===
     document.getElementById('btnArea').onclick = () => {
+      tempLayers.clearLayers();
       zonasData.forEach(z => {
-        const km2 = (turf.area(z) / 1e6).toFixed(2);
-        L.geoJSON(z, { style:{ color:'#6B4423', fillOpacity:0 } })
-         .addTo(map)
-         .bindPopup(`<b>${z.properties.nombre_zona}</b><br>Área: ${km2} km²`);
+        const area = (turf.area(z)/1e6).toFixed(2);
+        tempLayers.addLayer(
+          L.geoJSON(z, { style:{ color:'#D3B88C', fillOpacity:0 } })
+            .bindPopup(`<b>${z.properties.nombre_zona}</b><br>Área: ${area} km²`)
+        );
       });
     };
 
-    // 10) CENTROIDES: marca el centro de cada zona
+    // === Centroides ===
     document.getElementById('btnCentroid').onclick = () => {
+      tempLayers.clearLayers();
       zonasData.forEach(z => {
         const [lng, lat] = turf.centroid(z).geometry.coordinates;
-        L.circleMarker([lat, lng], {
-          radius:6,
-          color:'#2E8B57',
-          fillColor:'#6B8E23',
-          fillOpacity:1
-        }).addTo(map)
-          .bindPopup(`<b>Centroide</b><br>${z.properties.nombre_zona}`);
+        tempLayers.addLayer(
+          L.circleMarker([lat, lng], {
+            radius: 6,
+            color: '#E54B4B',
+            fillColor: '#482C3D',
+            fillOpacity: 1
+          }).bindPopup(`<b>Centroide</b><br>${z.properties.nombre_zona}`)
+        );
       });
     };
 
-    // 11) VECINOS: buffer y marcar puntos dentro de él
+    // === Vecinos ===
     document.getElementById('btnNeighbors').onclick = () => {
-      if (!selectedPoint) {
-        return alert('Primero selecciona un punto para el centro.');
-      }
+      tempLayers.clearLayers();
       const r = +document.getElementById('neighborRadius').value;
-      const circle = turf.circle(
-        [selectedPoint.lng, selectedPoint.lat],
-        r,
-        { units:'meters' }
+      const capa = markers.getLayers()[0];
+      if (!capa) return alert('No hay puntos visibles');
+      const c = capa.getLatLng();
+      const circle = turf.circle([c.lng, c.lat], r, { units: 'meters' });
+      tempLayers.addLayer(
+        L.geoJSON(circle, { style:{ color:'#537D8D', fillOpacity:0.1 } })
       );
-      L.geoJSON(circle, { style:{ color:'#8B4513', fillOpacity:0.1 } }).addTo(map);
       const fc = turf.featureCollection(
         puntosData.map(f => turf.point(f.geometry.coordinates))
       );
       const ptsIn = turf.pointsWithinPolygon(fc, circle);
       ptsIn.features.forEach(p => {
-        const [lng, lat] = p.geometry.coordinates;
-        L.circleMarker([lat, lng], {
-          radius:5,
-          color:'#8B4513',
-          fillOpacity:1
-        }).addTo(map);
+        tempLayers.addLayer(
+          L.circleMarker([p.geometry.coordinates[1], p.geometry.coordinates[0]], {
+            radius:5, color:'#1E1E24', fillOpacity:1
+          })
+        );
       });
       alert(`Vecinos encontrados: ${ptsIn.features.length}`);
     };
 
-    // 12) INTERSECCIÓN DE ZONAS: calcula solapamiento entre dos polígonos
+    // === Intersección de zonas ===
     document.getElementById('btnIntersectZones').onclick = () => {
+      tempLayers.clearLayers();
       const a = +zoneA.value, b = +zoneB.value;
-      if (a === b) return alert('Selecciona dos zonas distintas.');
-      const zA = zonasData.find(z => z.properties.id === a),
-            zB = zonasData.find(z => z.properties.id === b);
+      if (a === b) return alert('Selecciona dos zonas distintas');
+      const zA = zonasData.find(z => z.properties.id === a);
+      const zB = zonasData.find(z => z.properties.id === b);
       const inter = turf.intersect(zA, zB);
-      if (!inter) return alert('No hay intersección.');
-      L.geoJSON(inter, {
-        style:{ color:'#4B5320', fillOpacity:0.4, dashArray:'6' }
-      }).addTo(map)
-        .bindPopup('Intersección de Zonas');
+      if (!inter) return alert('No se intersectan');
+      tempLayers.addLayer(
+        L.geoJSON(inter, {
+          style:{ color:'#1E1E24', fillOpacity:0.4, dashArray:'6' }
+        }).bindPopup('Intersección de Zonas')
+      );
     };
   </script>
 </body>
