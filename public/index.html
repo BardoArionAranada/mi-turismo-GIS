@@ -18,7 +18,7 @@
 </head>
 <body>
   <header>
-    <h1>🗺️ TURISMO León Gto</h1>
+    <h1>🗺️ TURISMO</h1>
     <p>Bardo Arion Aranda · Luisa Fernanda Vázquez Razo · Francisco Osorno</p>
   </header>
 
@@ -35,11 +35,13 @@
           <li><span class="legend-icon reserva"></span>Reserva</li>
         </ul>
       </section>
+
       <!-- Filtros -->
       <section class="panel">
         <h2>🔍 Filtros</h2>
         <div id="filtros" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;"></div>
       </section>
+
       <!-- Análisis Turf.js -->
       <section class="panel">
         <h2>🛠️ Análisis Turf.js</h2>
@@ -47,17 +49,21 @@
           <input id="bufferDist" type="number" value="500">
         </label>
         <button id="btnBuffer">Crear Buffer</button>
+
         <label style="margin-top: 1rem; display: block;">Distancia entre:</label>
         <div style="display: flex; gap: 0.5rem;">
           <select id="distA"></select>
           <select id="distB"></select>
         </div>
         <button id="btnDist">Medir Distancia</button>
+
         <label style="margin-top: 1rem; display: block;">Contar puntos en zona:</label>
         <select id="zoneCount"></select>
         <button id="btnCount">Contar Puntos</button>
+
         <button id="btnClear" style="margin-top: 1rem;">Limpiar Capas</button>
       </section>
+
       <!-- Análisis Avanzado -->
       <section class="panel">
         <h2>📐 Análisis Avanzado</h2>
@@ -68,6 +74,7 @@
         </label>
         <button id="btnNeighbors">Buscar Vecinos</button>
       </section>
+
       <!-- Intersección de Zonas -->
       <section class="panel">
         <h2>🔗 Intersección de Zonas</h2>
@@ -106,42 +113,69 @@
     });
 
     // === Capas y grupos ===
-    const markers = L.markerClusterGroup();
-    const zonasLayer = L.geoJSON(null, {
+    const markers        = L.markerClusterGroup().addTo(map);
+    const zonasLayer     = L.geoJSON(null, {
       style: { color: '#8B4513', weight: 2, fillOpacity: 0.2 },
-      onEachFeature: (f, l) =>
-        l.bindPopup(`<b>${f.properties.nombre_zona}</b><br>${f.properties.tipo_zona}`)
+      onEachFeature: (f,l) => l.bindPopup(`<b>${f.properties.nombre_zona}</b>`)
     }).addTo(map);
-    const tempLayers = L.layerGroup().addTo(map);
+    const tempLayers     = L.layerGroup().addTo(map);      // buffers, distance lines, etc.
+    const intersectLayer = L.layerGroup().addTo(map);      // solo intersecciones
 
     // === Datos en memoria ===
-    let puntosData = [], zonasData = [], tipos = new Set();
+    let puntosData     = [],
+        zonasData      = [],
+        tipos          = new Set(),
+        selectedMarker = null,
+        buffersData    = [];
 
-    // === Carga de puntos ===
+    // === Carga de puntos y filtros ===
     fetch('/puntos').then(r => r.json()).then(d => {
       puntosData = d.features;
-      const selA = document.getElementById('distA'),
-            selB = document.getElementById('distB'),
-            fd   = document.getElementById('filtros');
+      const selA    = document.getElementById('distA'),
+            selB    = document.getElementById('distB'),
+            filtros = document.getElementById('filtros');
+
+      // llenar selects de distancia y tipos
       puntosData.forEach(f => {
         tipos.add(f.properties.tipo);
-        [selA, selB].forEach(s =>
-          s.add(new Option(f.properties.nombre, f.properties.id))
-        );
+        selA.add(new Option(f.properties.nombre, f.properties.id));
+        selB.add(new Option(f.properties.nombre, f.properties.id));
       });
+
+      // generar checkboxes de filtro
       tipos.forEach(t => {
-        const cb = document.createElement('input');
-        cb.type = 'checkbox'; cb.value = t; cb.checked = true;
+        const cb  = document.createElement('input');
+        cb.type   = 'checkbox';
+        cb.value  = t;
+        cb.checked= true;
         cb.onchange = renderPuntos;
         const lbl = document.createElement('label');
         lbl.append(cb, ' ', t);
-        lbl.style.background = 'rgba(255,255,255,0.1)';
-        lbl.style.padding = '0.3rem 0.6rem';
-        lbl.style.borderRadius = '0.5rem';
-        fd.append(lbl);
+        lbl.style.cssText = 'background:rgba(255,255,255,0.1);padding:0.3rem 0.6rem;border-radius:0.5rem;';
+        filtros.append(lbl);
       });
+
       renderPuntos();
     });
+
+    // === Renderizado de puntos según filtros ===
+    function renderPuntos() {
+      markers.clearLayers();
+      const activos = new Set(
+        Array.from(document.querySelectorAll('#filtros input:checked'))
+             .map(cb => cb.value)
+      );
+      puntosData.filter(f => activos.has(f.properties.tipo))
+                .forEach(f => {
+        const marker = L.marker(
+          [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+          { icon: defaultIcon }
+        ).bindPopup(`<b>${f.properties.nombre}</b><br>${f.properties.tipo}`)
+         .on('click', () => selectedMarker = marker);
+        marker.feature = f;
+        markers.addLayer(marker);
+      });
+    }
 
     // === Carga de zonas ===
     fetch('/zonas').then(r => r.json()).then(d => {
@@ -150,153 +184,147 @@
       zonasData.forEach(z => {
         ['zoneA','zoneB','zoneCount'].forEach(id => {
           document.getElementById(id)
-            .add(new Option(z.properties.nombre_zona, z.properties.id));
+                  .add(new Option(z.properties.nombre_zona, z.properties.id));
         });
       });
     });
 
-    // === Render de puntos con iconos ===
-    function renderPuntos(){
-      markers.clearLayers();
-      const activos = new Set(
-        Array.from(document.querySelectorAll('#filtros input:checked'))
-             .map(cb => cb.value)
-      );
-      puntosData
-        .filter(f => activos.has(f.properties.tipo))
-        .forEach(f => {
-          const m = L.marker(
-            [f.geometry.coordinates[1], f.geometry.coordinates[0]],
-            { icon: defaultIcon }
-          ).bindPopup(`<b>${f.properties.nombre}</b><br>${f.properties.tipo}`);
-          markers.addLayer(m);
-        });
-      map.addLayer(markers);
-    }
-
-    // === Colores por tipo (para buffers, líneas, zonas) ===
-    function getColor(tipo){
-      return ({
-        'Atracción': '#E54B4B',
-        'Museo'     : '#D3B88C',
-        'Hotel'     : '#482C3D',
-        'Iglesia'   : '#537D8D',
-        'Reserva'   : '#1E1E24'
-      })[tipo] || '#333';
-    }
-
-    // === Buffer ===
+    // === Crear Buffer ===
     document.getElementById('btnBuffer').onclick = () => {
-      tempLayers.clearLayers();
-      const d = +document.getElementById('bufferDist').value;
-      const capa = markers.getLayers()[0];
-      if (!capa) return alert('No hay puntos visibles');
-      const c = capa.getLatLng();
-      const buf = turf.circle([c.lng, c.lat], d, { units: 'meters' });
-      tempLayers.addLayer(
-        L.geoJSON(buf, { style: { color: getColor(capa.options.icon.options.iconUrl), fillOpacity: 0.15 } })
-      );
+      if (!selectedMarker) return alert('Haz clic en un punto primero');
+      const dist = +document.getElementById('bufferDist').value;
+      const { lat,lng } = selectedMarker.getLatLng();
+      const buf = turf.circle([lng,lat], dist, { units: 'meters' });
+      const name = selectedMarker.feature.properties.nombre;
+      // dibujar buffer
+      L.geoJSON(buf, {
+        style:{ color:'#E54B4B', fillOpacity:0.2 }
+      }).bindPopup(`Buffer ${dist} m — ${name}`)
+        .addTo(tempLayers);
+      buffersData.push({ feature: buf, name });
+      // añadir opción a zoneA, zoneB y ahora también zoneCount
+      ['zoneA','zoneB','zoneCount'].forEach(id => {
+        document.getElementById(id)
+                .add(new Option(`Buffer ${buffersData.length} (${name})`, `b${buffersData.length-1}`));
+      });
     };
 
-    // === Distancia ===
+    // === Medir Distancia ===
     document.getElementById('btnDist').onclick = () => {
       tempLayers.clearLayers();
       const a = +distA.value, b = +distB.value;
-      const fA = puntosData.find(f => f.properties.id === a);
-      const fB = puntosData.find(f => f.properties.id === b);
+      const fA = puntosData.find(f=>f.properties.id===a),
+            fB = puntosData.find(f=>f.properties.id===b);
       if (!fA||!fB) return alert('Selecciona dos puntos distintos');
       const dist = turf.distance(fA, fB, { units: 'meters' }).toFixed(1);
       const line = turf.lineString([fA.geometry.coordinates, fB.geometry.coordinates]);
-      tempLayers.addLayer(
-        L.geoJSON(line, { style:{ color:'#482C3D', dashArray:'4' } })
-          .bindPopup(`Distancia: ${dist} m`)
-      );
+      L.geoJSON(line, { style:{ color:'#482C3D', dashArray:'4' } })
+        .bindPopup(`Distancia: ${dist} m`)
+        .addTo(tempLayers)
+        .openPopup();
     };
 
-    // === Conteo en zona ===
+    // === Contar Puntos en Zona ===
     document.getElementById('btnCount').onclick = () => {
-      const zid = +zoneCount.value;
-      const zona = zonasData.find(z => z.properties.id === zid);
-      if (!zona) return alert('Selecciona una zona');
-      const fc = turf.featureCollection(
-        puntosData.map(f => turf.point(f.geometry.coordinates))
-      );
-      const ptsIn = turf.pointsWithinPolygon(fc, zona);
-      alert(`Hay ${ptsIn.features.length} puntos en "${zona.properties.nombre_zona}"`);
+      const val = document.getElementById('zoneCount').value;
+      if (val.startsWith('b')) {
+        // contar dentro de un buffer
+        const buf = buffersData[+val.slice(1)].feature;
+        let cnt = 0;
+        puntosData.forEach(f => {
+          if (turf.booleanPointInPolygon(f, buf)) cnt++;
+        });
+        alert(`Hay ${cnt} puntos en "${buffersData[+val.slice(1)].name}"`);
+      } else {
+        // contar dentro de una zona
+        const zid = +val;
+        const zona = zonasData.find(z=>z.properties.id===zid);
+        if (!zona) return alert('Selecciona una zona');
+        const fc    = turf.featureCollection(puntosData.map(f=>turf.point(f.geometry.coordinates)));
+        const ptsIn = turf.pointsWithinPolygon(fc, zona);
+        alert(`Hay ${ptsIn.features.length} puntos en "${zona.properties.nombre_zona}"`);
+      }
     };
 
-    // === Limpiar capas ===
+    // === Limpiar Capas y Buffers ===
     document.getElementById('btnClear').onclick = () => {
       tempLayers.clearLayers();
+      buffersData.length = 0;
+      ['zoneA','zoneB','zoneCount'].forEach(id => {
+        const sel = document.getElementById(id);
+        // eliminar opciones de buffer
+        for (let i = sel.options.length - 1; i >= 0; i--) {
+          if (sel.options[i].value.startsWith('b')) sel.remove(i);
+        }
+      });
+      intersectLayer.clearLayers();
     };
 
-    // === Áreas ===
+    // === Calcular Áreas ===
     document.getElementById('btnArea').onclick = () => {
       tempLayers.clearLayers();
       zonasData.forEach(z => {
         const area = (turf.area(z)/1e6).toFixed(2);
-        tempLayers.addLayer(
-          L.geoJSON(z, { style:{ color:'#D3B88C', fillOpacity:0 } })
-            .bindPopup(`<b>${z.properties.nombre_zona}</b><br>Área: ${area} km²`)
-        );
+        L.geoJSON(z, { style:{ color:'#D3B88C', fillOpacity:0 } })
+         .bindPopup(`<b>${z.properties.nombre_zona}</b><br>Área: ${area} km²`)
+         .addTo(tempLayers);
       });
     };
 
-    // === Centroides ===
+    // === Mostrar Centroides ===
     document.getElementById('btnCentroid').onclick = () => {
       tempLayers.clearLayers();
       zonasData.forEach(z => {
-        const [lng, lat] = turf.centroid(z).geometry.coordinates;
-        tempLayers.addLayer(
-          L.circleMarker([lat, lng], {
-            radius: 6,
-            color: '#E54B4B',
-            fillColor: '#482C3D',
-            fillOpacity: 1
-          }).bindPopup(`<b>Centroide</b><br>${z.properties.nombre_zona}`)
-        );
+        const [lng,lat] = turf.centroid(z).geometry.coordinates;
+        L.circleMarker([lat,lng], {
+          radius:6, color:'#E54B4B', fillColor:'#482C3D', fillOpacity:1
+        }).bindPopup(`<b>Centroide</b><br>${z.properties.nombre_zona}`)
+          .addTo(tempLayers);
       });
     };
 
-    // === Vecinos ===
+    // === Buscar Vecinos ===
     document.getElementById('btnNeighbors').onclick = () => {
+      if (!selectedMarker) return alert('Haz clic en un punto primero');
       tempLayers.clearLayers();
       const r = +document.getElementById('neighborRadius').value;
-      const capa = markers.getLayers()[0];
-      if (!capa) return alert('No hay puntos visibles');
-      const c = capa.getLatLng();
-      const circle = turf.circle([c.lng, c.lat], r, { units: 'meters' });
-      tempLayers.addLayer(
-        L.geoJSON(circle, { style:{ color:'#537D8D', fillOpacity:0.1 } })
-      );
-      const fc = turf.featureCollection(
-        puntosData.map(f => turf.point(f.geometry.coordinates))
-      );
-      const ptsIn = turf.pointsWithinPolygon(fc, circle);
-      ptsIn.features.forEach(p => {
-        tempLayers.addLayer(
-          L.circleMarker([p.geometry.coordinates[1], p.geometry.coordinates[0]], {
+      const { lat,lng } = selectedMarker.getLatLng();
+      // dibujar círculo de búsqueda
+      const circle = turf.circle([lng,lat], r, { units:'meters' });
+      L.geoJSON(circle, { style:{ color:'#537D8D', fillOpacity:0.1 } })
+        .addTo(tempLayers);
+      // buscar puntos por distancia real
+      let cnt = 0;
+      puntosData.forEach(f => {
+        const [lon, latF] = f.geometry.coordinates;
+        const d = turf.distance([lon,latF], [lng,lat], { units:'meters' });
+        if (d <= r) {
+          L.circleMarker([latF,lon], {
             radius:5, color:'#1E1E24', fillOpacity:1
-          })
-        );
+          }).bindPopup(`<b>${f.properties.nombre}</b><br>${d.toFixed(1)} m`)
+            .addTo(tempLayers);
+          cnt++;
+        }
       });
-      alert(`Vecinos encontrados: ${ptsIn.features.length}`);
+      alert(`Vecinos encontrados: ${cnt}`);
     };
 
-    // === Intersección de zonas ===
+    // === Intersección de Zonas y Buffers ===
     document.getElementById('btnIntersectZones').onclick = () => {
-      tempLayers.clearLayers();
-      const a = +zoneA.value, b = +zoneB.value;
-      if (a === b) return alert('Selecciona dos zonas distintas');
-      const zA = zonasData.find(z => z.properties.id === a);
-      const zB = zonasData.find(z => z.properties.id === b);
-      const inter = turf.intersect(zA, zB);
+      intersectLayer.clearLayers();
+      const a = document.getElementById('zoneA').value,
+            b = document.getElementById('zoneB').value;
+      if (a === b) return alert('Selecciona dos distintas');
+      const pick = v => v.startsWith('b')
+        ? buffersData[+v.slice(1)].feature
+        : zonasData.find(z=>z.properties.id===+v);
+      const fA = pick(a), fB = pick(b);
+      const inter = turf.intersect(fA, fB);
       if (!inter) return alert('No se intersectan');
-      tempLayers.addLayer(
-        L.geoJSON(inter, {
-          style:{ color:'#1E1E24', fillOpacity:0.4, dashArray:'6' }
-        }).bindPopup('Intersección de Zonas')
-      );
+      L.geoJSON(inter, {
+        style:{ color:'#1E1E24', fillOpacity:0.4, dashArray:'6' }
+      }).bindPopup('Intersección')
+        .addTo(intersectLayer);
     };
   </script>
 </body>

@@ -100,3 +100,35 @@ button:hover { background:#E5C794 }
   #sidebar { width:100%; height:40%; border-right:none; border-bottom:4px solid #E54B4B }
   #map     { height:60% }
 }
+/* ------------------------------------
+   Filtros en dos filas horizontales
+   ------------------------------------ */
+#filtros {
+  display: grid !important;
+  /* 2 filas de altura automática */
+  grid-template-rows: repeat(2, auto);
+  /* rellenar por columnas, creando nuevas columnas según haga falta */
+  grid-auto-flow: column;
+  /* cada columna tendrá al menos 140px de ancho, y podrá crecer */
+  grid-auto-columns: minmax(140px, 1fr);
+  gap: 0.5rem;
+}
+
+#filtros label {
+  display: flex;
+  align-items: center;
+}
+
+#filtros input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+#filtros {
+  overflow-x: auto;    /* permite scroll horizontal */
+  overflow-y: hidden;  /* oculta scroll vertical si lo hubiera */
+  /* el resto de tu grid… */
+  display: grid !important;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(140px, 1fr);
+  gap: 0.5rem;
+}
